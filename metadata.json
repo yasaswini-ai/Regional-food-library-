@@ -1,0 +1,7 @@
+{
+  "name": "Rasoi Lineage - Regional Indian Cookbook & Cook Mode",
+  "description": "Authentic regional Indian culinary archive honoring family and district variations across Telugu, South Indian, and North Indian cuisines, with interactive Cook Mode, difficulty justifications, substitutions, and multilingual support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
