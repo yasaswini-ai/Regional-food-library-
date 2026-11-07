@@ -188,12 +188,121 @@ Return JSON with:
   }
 });
 
+// AI On-Demand Recipe Generator Endpoint for ANY queried dish
+app.post('/api/recipes/generate-dish', async (req: Request, res: Response) => {
+  try {
+    const { dishName } = req.body;
+    if (!dishName || typeof dishName !== 'string' || !dishName.trim()) {
+      return res.status(400).json({ error: 'Please provide a dish name' });
+    }
+
+    const cleanDish = dishName.trim();
+
+    const prompt = `You are a culinary historian, regional food scholar, and master Indian chef.
+The user is searching for this dish: "${cleanDish}".
+
+Generate a complete, deeply authentic Indian culinary Recipe object in JSON format.
+CRITICAL CULINARY CONSTITUTION (Strictly Enforce):
+1. Never present one version as the only authentic version. Always provide 2 or 3 distinct regional, district, or family variations (e.g. comparing Coastal Andhra vs Rayalaseema vs Telangana, or Punjab vs Awadh, or Chettinad vs Malabar, or Temple vs Street style).
+2. For each variation, include:
+   - "id": kebab-case string
+   - "versionTitle": full descriptive name including district/heritage style
+   - "tagline": evocative one-liner capturing flavour and texture
+   - "regionalLineage": {
+       "district": "e.g. Guntur / Madurai / Amritsar",
+       "region": "Telugu" | "South Indian" | "North Indian" | "Pan-Indian",
+       "state": "Indian state",
+       "heritageContext": "Historical origins and cultural context (2-3 sentences)",
+       "traditionalVessel": "e.g., Cast Iron Tawa, Soapstone Kalchatti, Heavy Handi, Brass Kadai"
+     }
+   - "difficulty": {
+       "level": "Easy" | "Medium" | "Hard",
+       "stepsCount": number,
+       "activeTimeMin": number,
+       "passiveTimeMin": number,
+       "techniqueComplexity": "Low" | "Moderate" | "High" | "Artisanal",
+       "justification": "Technical justification explaining why this level was assigned"
+     }
+   - "servings": 4,
+   - "prepTimeMin": number,
+   - "cookTimeMin": number,
+   - "spiceLevel": number (1 to 5),
+   - "nutritionFacts": {
+       "servingSize": "e.g. 1 serving (approx 220g)",
+       "calories": number,
+       "proteinGrams": number,
+       "carbsGrams": number,
+       "fatGrams": number,
+       "fiberGrams": number,
+       "sodiumMg": number,
+       "dietaryHighlights": ["list", "of", "highlights"]
+     }
+   - "ingredients": array of objects {
+       "id": "unique id",
+       "name": "Ingredient name with regional term in brackets",
+       "amount": number,
+       "unit": "tbsp" | "tsp" | "cups" | "pieces" | "grams" | "sprigs" | "inch",
+       "category": "grain" | "lentil" | "spice" | "dairy" | "vegetable" | "protein" | "oil" | "aromatic",
+       "notes": "optional note"
+     }
+   - "substitutions": 2-3 genuine substitutions {
+       "original": "original ingredient",
+       "substitute": "authentic alternative",
+       "category": "dairy" | "gluten" | "vegetable" | "souring" | "spice" | "oil" | "protein",
+       "ratio": "e.g. 1:1",
+       "culinaryEffect": "Impact on flavor, moisture, texture",
+       "authenticityNote": "How it respects tradition"
+     }
+   - "steps": 5-8 chronological steps {
+       "stepNumber": number,
+       "instruction": "Detailed instruction with culinary cues",
+       "timerSeconds": optional number in seconds for active timing,
+       "timerLabel": optional string label,
+       "techniqueTip": "Actionable flame/heat/chemistry tip"
+     }
+   - "proTips": ["2-3 chef tips"],
+   - "servingSuggestions": ["2 traditional accompaniments"],
+   - "whyThisDiffers": "Exact culinary reason this variation differs from other regional versions"
+
+Root Recipe object must have:
+- "id": kebab-case string
+- "name": "English / Common name"
+- "teluguName": "Telugu script (తెలుగు)",
+- "hindiName": "Hindi script (हिन्दी)",
+- "tamilName": "Tamil script (தமிழ்)",
+- "category": "Breakfast" | "Rice Specialties" | "Lentils & Gravies" | "Royal Curries" | "Coastal & Seafood" | "Street Food & Snacks" | "Traditional Sweets",
+- "heroImage": "/src/assets/images/hero_culinary_spread_1793770951915.jpg",
+- "shortDescription": "2-sentence introduction celebrating the dish",
+- "culturalPhilosophy": "2-3 sentences explaining regional variations and culinary reverence",
+- "variations": [ ... array of variations ]
+
+Output strictly valid JSON matching this structure without Markdown wraps.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+      },
+    });
+
+    const parsed = JSON.parse(response.text || '{}');
+    return res.json(parsed);
+  } catch (error: any) {
+    console.error('Error generating custom recipe:', error);
+    return res.status(500).json({ error: error.message || 'Failed to generate recipe' });
+  }
+});
+
 // Vite middleware in dev or static files in production
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { 
+        middlewareMode: true,
+        hmr: false 
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -205,7 +314,7 @@ async function startServer() {
   }
 
   app.listen(port, '0.0.0.0', () => {
-    console.log(`Rasoi Lineage server running on http://0.0.0.0:${port}`);
+    console.log(`Flavora server running on http://0.0.0.0:${port}`);
   });
 }
 

@@ -3,15 +3,83 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Rasoi Lineage - Regional Indian Cookbook & Cook Mode</title>
-    <meta name="description" content="Authentic regional Indian culinary archive honoring family and district variations across Telugu, South Indian, and North Indian cuisines, with interactive Cook Mode, difficulty justifications, substitutions, and multilingual support." />
-    <meta property="og:title" content="Rasoi Lineage - Regional Indian Cookbook & Cook Mode" />
-    <meta property="og:description" content="Authentic regional Indian culinary archive honoring family and district variations across Telugu, South Indian, and North Indian cuisines, with interactive Cook Mode, difficulty justifications, substitutions, and multilingual support." />
+    <title>Flavora</title>
+    <meta name="description" content="Flavora - Authentic regional Indian culinary archive honoring family and district variations across Telugu, South Indian, North Indian, Pan-Indian states, and international diaspora traditions." />
+    <meta property="og:title" content="Flavora" />
+    <meta property="og:description" content="Flavora - Authentic regional Indian culinary archive honoring family and district variations across Telugu, South Indian, North Indian, Pan-Indian states, and international diaspora traditions." />
     <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0e0c09" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Flavora" />
     <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" type="image/jpeg" href="/flavora_icon.jpg" />
+    <link rel="shortcut icon" href="/flavora_icon.jpg" />
+    <link rel="apple-touch-icon" href="/flavora_icon.jpg" />
+    <meta property="og:image" content="/flavora_icon.jpg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      (function() {
+        // Intercept console.error to filter out benign [vite] WebSocket notices in AI Studio preview
+        const origConsoleError = console.error;
+        console.error = function(...args) {
+          const msg = args.map(function(a) {
+            return typeof a === 'object' ? (a && a.message ? a.message : JSON.stringify(a)) : String(a);
+          }).join(' ');
+          if (msg.includes('WebSocket') || msg.includes('vite') || msg.includes('@vite/client')) {
+            return;
+          }
+          origConsoleError.apply(console, args);
+        };
+
+        // Mock WebSocket for vite-hmr so it never throws "WebSocket closed without opened"
+        const NativeWebSocket = window.WebSocket;
+        if (NativeWebSocket) {
+          window.WebSocket = function(url, protocols) {
+            if (typeof url === 'string' && (protocols === 'vite-hmr' || url.includes('/@vite/client') || url.includes('vite') || (Array.isArray(protocols) && protocols.includes('vite-hmr')))) {
+              var emitter = new EventTarget();
+              emitter.url = url;
+              emitter.readyState = 1; // OPEN
+              emitter.protocol = 'vite-hmr';
+              emitter.extensions = '';
+              emitter.bufferedAmount = 0;
+              emitter.binaryType = 'blob';
+              emitter.send = function() {};
+              emitter.close = function() {
+                emitter.readyState = 3;
+                emitter.dispatchEvent(new CloseEvent('close', { wasClean: true, code: 1000 }));
+              };
+              setTimeout(function() {
+                emitter.dispatchEvent(new Event('open'));
+              }, 10);
+              return emitter;
+            }
+            return new NativeWebSocket(url, protocols);
+          };
+          window.WebSocket.prototype = NativeWebSocket.prototype;
+          window.WebSocket.CONNECTING = 0;
+          window.WebSocket.OPEN = 1;
+          window.WebSocket.CLOSING = 2;
+          window.WebSocket.CLOSED = 3;
+        }
+
+        window.addEventListener('unhandledrejection', function(event) {
+          if (event.reason && (String(event.reason.message).includes('WebSocket') || String(event.reason).includes('WebSocket'))) {
+            event.preventDefault();
+          }
+        });
+        window.addEventListener('error', function(event) {
+          if (event.message && (event.message.includes('WebSocket') || event.message.includes('@vite/client'))) {
+            event.preventDefault();
+            return true;
+          }
+        });
+      })();
+    </script>
   </head>
   <body class="bg-[#0f0e0c] text-[#f4efe6] antialiased selection:bg-amber-600/30 selection:text-amber-200">
     <div id="root"></div>

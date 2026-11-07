@@ -10,9 +10,13 @@ import {
   AlertCircle, 
   ChefHat, 
   HelpCircle,
-  Share2
+  Share2,
+  Activity,
+  HeartPulse,
+  Scale
 } from 'lucide-react';
 import { Recipe, SupportedLanguage } from '../types';
+import { FlavorRadarChart } from './FlavorRadarChart';
 
 interface RecipeDetailProps {
   recipe: Recipe;
@@ -66,6 +70,29 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({
   const handlePrint = () => {
     window.print();
   };
+
+  const [showBatchNutrition, setShowBatchNutrition] = useState<boolean>(false);
+  const nutrition = currentVariation.nutritionFacts;
+  const currentMultiplier = showBatchNutrition ? portionMultiplier : 1;
+  const displayCalories = Math.round(nutrition.calories * currentMultiplier);
+  const displayProtein = Number((nutrition.proteinGrams * currentMultiplier).toFixed(1));
+  const displayCarbs = Number((nutrition.carbsGrams * currentMultiplier).toFixed(1));
+  const displayFat = Number((nutrition.fatGrams * currentMultiplier).toFixed(1));
+  const displayFiber = nutrition.fiberGrams !== undefined 
+    ? Number((nutrition.fiberGrams * currentMultiplier).toFixed(1)) 
+    : undefined;
+  const displaySodium = nutrition.sodiumMg !== undefined 
+    ? Math.round(nutrition.sodiumMg * currentMultiplier) 
+    : undefined;
+
+  // Macro calorie ratios
+  const proteinCals = displayProtein * 4;
+  const carbsCals = displayCarbs * 4;
+  const fatCals = displayFat * 9;
+  const totalMacroCals = proteinCals + carbsCals + fatCals || 1;
+  const proteinPct = Math.round((proteinCals / totalMacroCals) * 100);
+  const carbsPct = Math.round((carbsCals / totalMacroCals) * 100);
+  const fatPct = Math.max(0, 100 - proteinPct - carbsPct);
 
   return (
     <article className="space-y-8 animate-fadeIn">
@@ -261,6 +288,198 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({
           </p>
         </div>
       </div>
+
+      {/* Nutrition Facts Summary Card */}
+      <section className="p-6 rounded-2xl bg-[#16140f] border border-neutral-800 space-y-5 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-neutral-800">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Activity className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-base font-semibold text-white">
+                Nutrition Facts Summary
+              </h3>
+              <span className="text-neutral-500">·</span>
+              <span className="text-xs text-neutral-400">
+                {currentVariation.versionTitle.split(' (')[0]}
+              </span>
+            </div>
+            <p className="text-xs text-neutral-400">
+              Serving Size: <span className="text-neutral-200 font-medium">{nutrition.servingSize}</span>
+            </p>
+          </div>
+
+          {/* Per Serving vs Batch Toggle */}
+          <div className="flex items-center gap-1 p-1 bg-black/40 rounded-lg border border-neutral-800 self-start sm:self-auto no-print">
+            <button
+              onClick={() => setShowBatchNutrition(false)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                !showBatchNutrition
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              Per Serving
+            </button>
+            <button
+              onClick={() => setShowBatchNutrition(true)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                showBatchNutrition
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              Total Batch ({currentVariation.servings * portionMultiplier} serv.)
+            </button>
+          </div>
+        </div>
+
+        {/* Primary Calories & Macronutrients Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          {/* Calories Highlight Card */}
+          <div className="p-4 rounded-xl bg-gradient-to-b from-amber-950/30 to-[#13110d] border border-amber-900/40 space-y-1 col-span-2 sm:col-span-1">
+            <span className="text-[11px] uppercase tracking-wider text-amber-400 font-semibold block">
+              Energy
+            </span>
+            <div className="text-2xl sm:text-3xl font-display font-bold text-white font-mono tabular-nums">
+              {displayCalories}
+            </div>
+            <span className="text-[11px] text-neutral-400 block">
+              kcal ({Math.round((displayCalories / (2000 * (showBatchNutrition ? portionMultiplier : 1))) * 100)}% DV)
+            </span>
+          </div>
+
+          {/* Protein Card */}
+          <div className="p-4 rounded-xl bg-[#1a1813] border border-neutral-800 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] uppercase tracking-wider text-emerald-400 font-semibold">
+                Protein
+              </span>
+              <span className="text-[10px] font-mono text-neutral-400">{proteinPct}% cals</span>
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-white font-mono tabular-nums">
+              {displayProtein} <span className="text-xs font-normal text-neutral-400">g</span>
+            </div>
+            <span className="text-[11px] text-neutral-400 block">
+              Building & repair
+            </span>
+          </div>
+
+          {/* Carbohydrates Card */}
+          <div className="p-4 rounded-xl bg-[#1a1813] border border-neutral-800 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] uppercase tracking-wider text-amber-400 font-semibold">
+                Carbs
+              </span>
+              <span className="text-[10px] font-mono text-neutral-400">{carbsPct}% cals</span>
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-white font-mono tabular-nums">
+              {displayCarbs} <span className="text-xs font-normal text-neutral-400">g</span>
+            </div>
+            <span className="text-[11px] text-neutral-400 block">
+              Complex energy
+            </span>
+          </div>
+
+          {/* Fat Card */}
+          <div className="p-4 rounded-xl bg-[#1a1813] border border-neutral-800 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] uppercase tracking-wider text-sky-400 font-semibold">
+                Total Fat
+              </span>
+              <span className="text-[10px] font-mono text-neutral-400">{fatPct}% cals</span>
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-white font-mono tabular-nums">
+              {displayFat} <span className="text-xs font-normal text-neutral-400">g</span>
+            </div>
+            <span className="text-[11px] text-neutral-400 block">
+              Essential lipids
+            </span>
+          </div>
+
+          {/* Dietary Fiber Card */}
+          <div className="p-4 rounded-xl bg-[#1a1813] border border-neutral-800 space-y-1">
+            <span className="text-[11px] uppercase tracking-wider text-teal-400 font-semibold block">
+              Dietary Fiber
+            </span>
+            <div className="text-xl sm:text-2xl font-bold text-white font-mono tabular-nums">
+              {displayFiber !== undefined ? displayFiber : '—'} <span className="text-xs font-normal text-neutral-400">g</span>
+            </div>
+            <span className="text-[11px] text-neutral-400 block">
+              Digestive health
+            </span>
+          </div>
+
+          {/* Sodium Card */}
+          <div className="p-4 rounded-xl bg-[#1a1813] border border-neutral-800 space-y-1">
+            <span className="text-[11px] uppercase tracking-wider text-neutral-400 font-semibold block">
+              Sodium
+            </span>
+            <div className="text-xl sm:text-2xl font-bold text-white font-mono tabular-nums">
+              {displaySodium !== undefined ? displaySodium : '—'} <span className="text-xs font-normal text-neutral-400">mg</span>
+            </div>
+            <span className="text-[11px] text-neutral-400 block">
+              Mineral balance
+            </span>
+          </div>
+        </div>
+
+        {/* Visual Macronutrient Energy Ratio Bar */}
+        <div className="space-y-2 pt-1">
+          <div className="flex items-center justify-between text-xs text-neutral-400 font-medium">
+            <span>Macronutrient Calorie Distribution:</span>
+            <div className="flex items-center gap-4 text-[11px]">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
+                Protein ({proteinPct}%)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-sm bg-amber-500" />
+                Carbohydrates ({carbsPct}%)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-sm bg-sky-500" />
+                Fat ({fatPct}%)
+              </span>
+            </div>
+          </div>
+
+          <div className="h-2 w-full rounded-full bg-neutral-900 overflow-hidden flex">
+            <div
+              className="bg-emerald-500 h-full transition-all duration-300"
+              style={{ width: `${proteinPct}%` }}
+              title={`Protein: ${proteinPct}% of total calories`}
+            />
+            <div
+              className="bg-amber-500 h-full transition-all duration-300"
+              style={{ width: `${carbsPct}%` }}
+              title={`Carbohydrates: ${carbsPct}% of total calories`}
+            />
+            <div
+              className="bg-sky-500 h-full transition-all duration-300"
+              style={{ width: `${fatPct}%` }}
+              title={`Fat: ${fatPct}% of total calories`}
+            />
+          </div>
+        </div>
+
+        {/* Dietary Highlights Strip (Unboxed Clean Metadata) */}
+        {nutrition.dietaryHighlights && nutrition.dietaryHighlights.length > 0 && (
+          <div className="pt-3 border-t border-neutral-800 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-400">
+            <span className="text-amber-400 font-semibold uppercase text-[10px] tracking-wider">
+              Nutritional Character:
+            </span>
+            {nutrition.dietaryHighlights.map((highlight, idx) => (
+              <React.Fragment key={idx}>
+                {idx > 0 && <span aria-hidden="true" className="text-neutral-600">·</span>}
+                <span className="text-neutral-300 font-medium">{highlight}</span>
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* D3 Interactive Flavor Profile Radar Chart */}
+      <FlavorRadarChart variation={currentVariation} />
 
       {/* Primary Cook Mode Callout Bar */}
       <div className="p-6 rounded-2xl bg-gradient-to-r from-amber-950/40 via-amber-900/30 to-[#181611] border border-amber-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl no-print">

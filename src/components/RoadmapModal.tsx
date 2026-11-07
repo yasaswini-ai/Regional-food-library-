@@ -1,16 +1,17 @@
 import React from 'react';
-import { X, CheckCircle, Clock } from 'lucide-react';
+import { X, CheckCircle, ArrowRight, Sparkles } from 'lucide-react';
 
 interface RoadmapModalProps {
   onClose: () => void;
+  onSelectPhaseFilter?: (phase: string) => void;
 }
 
-export const RoadmapModal: React.FC<RoadmapModalProps> = ({ onClose }) => {
+export const RoadmapModal: React.FC<RoadmapModalProps> = ({ onClose, onSelectPhaseFilter }) => {
   const phases = [
     {
       phase: 'Phase 1',
       title: 'Telugu, North Indian and South Indian Collections',
-      status: 'Active & Verified',
+      status: 'Live & Operational',
       isCurrent: true,
       description: 'Carefully verified, authentic foundational collections covering Andhra/Rayalaseema/Telangana Telugu traditions, Punjabi and Awadhi North Indian styles, and coastal South Indian heritage with multi-version lineage.',
       deliverables: [
@@ -19,29 +20,33 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ onClose }) => {
         'Hyderabadi Kacchi Dum vs Military Pulao vs Awadhi Pakki Biryani',
         'Amritsari Dhaba Dal Makhani vs Andhra Tomato Pappu vs Udupi Sambar',
       ],
+      filterKey: 'Phase 1',
     },
     {
       phase: 'Phase 2',
       title: 'All Indian States and Regional Cuisines',
-      status: 'Next Iteration',
-      isCurrent: false,
-      description: 'Expanding deep district coverage: Malabar Kerala, Chettinad Tamil Nadu, Goan Saraswat, Bengali Macher Jhol, Gujarati Kathiyawadi, Rajasthani Ker Sangri, and Kashmiri Wazwan.',
+      status: 'Live & Operational',
+      isCurrent: true,
+      description: 'Deep district coverage across all Indian states: Bengal (Shorshe Maach), Kashmir (Pandit & Wazwan Rogan Josh), Gujarat (Surati Khaman Dhokla & Undhiyu), Rajasthan (Marwari Dal Baati & Ker Sangri), Bihar (Patna Litti Chokha), and Goa.',
       deliverables: [
-        'District-level terroir and spice crop mapping',
-        'Micro-regional heirloom grain integration (Matta, Gobindobhog)',
-        'Indigenous cold-pressed oil pairing guides',
+        'District-level terroir and spice crop mapping (Kolkata, Srinagar, Surat, Jodhpur, Patna)',
+        'Micro-regional heirloom grain integration (Gobindobhog, Sona Masoori, Coarse Atta)',
+        'Indigenous cold-pressed oil pairing guides (Kachi Ghani Mustard, Desi Ghee, Groundnut)',
       ],
+      filterKey: 'Phase 2',
     },
     {
       phase: 'Phase 3',
-      title: 'International Diaspora & Adaptations',
-      status: 'Upcoming',
-      isCurrent: false,
-      description: 'Cross-cultural diasporic adaptations: Indo-Chinese Kolkata heritage, British-Indian Curry House lineage (Balti, Chicken Tikka Masala origins), South African Durban Bunny Chow, and Caribbean Indo-Trinidadian rotis.',
+      title: 'International Diaspora & Global Adaptations',
+      status: 'Live & Operational',
+      isCurrent: true,
+      description: 'Cross-cultural diasporic adaptations: Kolkata Tangra Hakka Chinese (Chilli Chicken & Manchurian), British-Indian Curry House lineage (Glasgow Chicken Tikka Masala & Birmingham Balti), South African Durban Bunny Chow, and Caribbean Indo-Trinidadian Doubles & Roti.',
       deliverables: [
-        'Wok-tossed Hakka Indian spices',
-        'Diaspora ingredient substitutions across global grocery markets',
+        'Wok-tossed Hakka Indian spices & high-heat wok hei techniques',
+        'Diaspora ingredient substitutions across global grocery markets (US, UK, Europe, Africa, Caribbean)',
+        'Authentic historical context on 19th-century indenture and 20th-century restaurant migrations',
       ],
+      filterKey: 'Phase 3',
     },
     {
       phase: 'Phase 4',
@@ -75,7 +80,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ onClose }) => {
       deliverables: [
         'Offline recipe bookmarking & memory storage',
         'Print-optimized high-contrast kitchen binder cards',
-        'Family variation notes submission',
+        'Weekly Monday–Sunday Meal Planner with aggregated grocery list',
       ],
     },
   ];
@@ -91,13 +96,15 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ onClose }) => {
                 Architecture & Product Vision
               </span>
               <span className="text-neutral-500">·</span>
-              <span className="text-xs text-neutral-400">Roadmap Item #12</span>
+              <span className="text-xs text-emerald-400 font-mono font-medium">
+                Phases 1, 2, 3, 4, 5 & 6 All Live
+              </span>
             </div>
             <h2 className="text-2xl font-display text-white">
-              Rasoi Lineage Development Roadmap
+              Flavora Development Roadmap
             </h2>
             <p className="text-xs text-neutral-400 mt-1 max-w-2xl">
-              "Start with a carefully verified collection of recipes, then expand. Use licensed or original photographs and properly attributed recipe sources."
+              "Honoring verified district traditions across India and the global diaspora with multiple authentic variations for every dish."
             </p>
           </div>
           <button
@@ -114,22 +121,12 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ onClose }) => {
             {phases.map((p, idx) => (
               <div key={idx} className="relative flex items-start gap-5">
                 {/* Node icon */}
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 border ${
-                    p.isCurrent
-                      ? 'bg-amber-600 border-amber-400 text-white shadow-lg'
-                      : 'bg-[#191712] border-neutral-700 text-neutral-400'
-                  }`}
-                >
-                  {p.isCurrent ? (
-                    <CheckCircle className="w-5 h-5" />
-                  ) : (
-                    <Clock className="w-4 h-4" />
-                  )}
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 border bg-amber-600 border-amber-400 text-white shadow-lg shadow-amber-600/20">
+                  <CheckCircle className="w-5 h-5" />
                 </div>
 
                 {/* Card Content */}
-                <div className="flex-1 p-5 rounded-xl bg-[#191712] border border-neutral-800 space-y-2">
+                <div className="flex-1 p-5 rounded-xl bg-[#191712] border border-neutral-800 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5">
                       <span className="text-xs font-mono font-bold text-amber-500 uppercase">
@@ -139,13 +136,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ onClose }) => {
                         {p.title}
                       </h3>
                     </div>
-                    <span
-                      className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
-                        p.isCurrent
-                          ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/80'
-                          : 'bg-white/5 text-neutral-400 border-white/5'
-                      }`}
-                    >
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border bg-emerald-950/60 text-emerald-400 border-emerald-800/80">
                       {p.status}
                     </span>
                   </div>
@@ -154,9 +145,9 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ onClose }) => {
                     {p.description}
                   </p>
 
-                  <div className="pt-2 border-t border-neutral-800">
-                    <span className="text-[10px] uppercase tracking-wider font-semibold text-neutral-400 block mb-1">
-                      Key Highlights:
+                  <div className="pt-2 border-t border-neutral-800 space-y-2">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-neutral-400 block">
+                      Active Features & Lineages:
                     </span>
                     <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                       {p.deliverables.map((d, i) => (
@@ -166,6 +157,22 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ onClose }) => {
                         </li>
                       ))}
                     </ul>
+
+                    {p.filterKey && onSelectPhaseFilter && (
+                      <div className="pt-2">
+                        <button
+                          onClick={() => {
+                            onSelectPhaseFilter(p.filterKey!);
+                            onClose();
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition-colors flex items-center gap-1.5"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Explore {p.phase} Collections in Catalog</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -174,12 +181,15 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-amber-900/30 bg-[#12100d] flex items-center justify-end">
+        <div className="p-4 border-t border-amber-900/30 bg-[#12100d] flex items-center justify-between">
+          <span className="text-xs text-neutral-400 font-mono">
+            Flavora v2.4 · All 6 Phases Fully Operational
+          </span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-300 text-xs rounded-md transition-colors"
+            className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs rounded-md transition-colors"
           >
-            Close
+            Explore Catalog
           </button>
         </div>
       </div>

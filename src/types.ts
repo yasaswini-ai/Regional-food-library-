@@ -22,7 +22,7 @@ export interface Ingredient {
 export interface Substitution {
   original: string;
   substitute: string;
-  category: 'dairy' | 'gluten' | 'vegetable' | 'souring' | 'spice' | 'oil' | 'protein';
+  category: 'dairy' | 'gluten' | 'vegetable' | 'souring' | 'spice' | 'oil' | 'protein' | 'aromatic';
   ratio: string;
   culinaryEffect: string;
   authenticityNote: string;
@@ -39,10 +39,30 @@ export interface CookingStep {
 
 export interface RegionalLineage {
   district: string;
-  region: 'Telugu' | 'South Indian' | 'North Indian' | 'Pan-Indian';
+  region: 'Telugu' | 'South Indian' | 'North Indian' | 'Pan-Indian' | 'Diaspora' | string;
   state: string;
   heritageContext: string;
   traditionalVessel: string;
+}
+
+export interface NutritionFacts {
+  servingSize: string;
+  calories: number;
+  proteinGrams: number;
+  carbsGrams: number;
+  fatGrams: number;
+  fiberGrams?: number;
+  sodiumMg?: number;
+  dietaryHighlights?: string[];
+}
+
+export interface FlavorProfile {
+  spicy: number; // 0 - 100
+  sweet: number; // 0 - 100
+  tangy: number; // 0 - 100
+  earthy: number; // 0 - 100
+  savory: number; // 0 - 100
+  aromatic?: number; // 0 - 100
 }
 
 export interface RecipeVariation {
@@ -55,6 +75,8 @@ export interface RecipeVariation {
   prepTimeMin: number;
   cookTimeMin: number;
   spiceLevel: 1 | 2 | 3 | 4 | 5;
+  nutritionFacts: NutritionFacts;
+  flavorProfile?: FlavorProfile;
   ingredients: Ingredient[];
   substitutions: Substitution[];
   steps: CookingStep[];
@@ -69,7 +91,15 @@ export interface Recipe {
   teluguName: string;
   hindiName: string;
   tamilName: string;
-  category: 'Breakfast' | 'Rice Specialties' | 'Lentils & Gravies' | 'Royal Curries';
+  category:
+    | 'Breakfast'
+    | 'Rice Specialties'
+    | 'Lentils & Gravies'
+    | 'Royal Curries'
+    | 'Coastal & Seafood'
+    | 'Street Food & Snacks'
+    | 'Traditional Sweets'
+    | string;
   heroImage: string;
   shortDescription: string;
   culturalPhilosophy: string;

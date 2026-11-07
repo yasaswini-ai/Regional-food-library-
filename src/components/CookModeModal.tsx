@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   X, 
   ChevronLeft, 
@@ -13,10 +13,16 @@ import {
   Clock, 
   ChefHat,
   Send,
-  Loader2
+  Loader2,
+  Mic,
+  MicOff,
+  Radio,
+  CheckCheck,
+  AlertCircle
 } from 'lucide-react';
 import { Recipe, RecipeVariation } from '../types';
 import { playChimeSound } from '../utils/audio';
+import { useCookModeVoice } from '../hooks/useCookModeVoice';
 
 interface CookModeModalProps {
   recipe: Recipe;
@@ -103,6 +109,14 @@ export const CookModeModal: React.FC<CookModeModalProps> = ({
     }));
   };
 
+  const handleCheckAll = useCallback(() => {
+    const allChecked: Record<string, boolean> = {};
+    variation.ingredients.forEach((ing) => {
+      allChecked[ing.id] = true;
+    });
+    setUsedIngredients(allChecked);
+  }, [variation.ingredients]);
+
   const formatTimer = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -115,7 +129,7 @@ export const CookModeModal: React.FC<CookModeModalProps> = ({
   };
 
   // Text to speech narration
-  const handleReadStep = () => {
+  const handleReadStep = useCallback(() => {
     if (!('speechSynthesis' in window)) return;
 
     if (isSpeaking) {
@@ -135,7 +149,78 @@ export const CookModeModal: React.FC<CookModeModalProps> = ({
 
     setIsSpeaking(true);
     window.speechSynthesis.speak(utterance);
-  };
+  }, [currentStep, isSpeaking]);
+
+  // Voice Command Handlers
+  const handleNextStep = useCallback(() => {
+    if (currentStepIndex < variation.steps.length - 1) {
+      setCurrentStepIndex((prev) => prev + 1);
+    }
+  }, [currentStepIndex, variation.steps.length]);
+
+  const handlePrevStep = useCallback(() => {
+    if (currentStepIndex > 0) {
+      setCurrentStepIndex((prev) => prev - 1);
+    }
+  }, [currentStepIndex]);
+
+  const handleVoiceCheckItem = useCallback((targetItemName?: string): string | null => {
+    if (targetItemName) {
+      const clean = targetItemName.toLowerCase().trim();
+      const match = variation.ingredients.find((ing) => {
+        const ingName = ing.name.toLowerCase();
+        return ingName.includes(clean) || clean.includes(ingName.split(' ')[0]);
+      });
+      if (match) {
+        setUsedIngredients((prev) => ({ ...prev, [match.id]: true }));
+        return match.name;
+      }
+    }
+
+    // Check off the first unchecked item in order
+    const nextUnchecked = variation.ingredients.find((ing) => !usedIngredients[ing.id]);
+    if (nextUnchecked) {
+      setUsedIngredients((prev) => ({ ...prev, [nextUnchecked.id]: true }));
+      return nextUnchecked.name;
+    }
+    return null;
+  }, [usedIngredients, variation.ingredients]);
+
+  const handleStartTimer = useCallback(() => {
+    if (initialSeconds > 0) {
+      setTimerRunning(true);
+    }
+  }, [initialSeconds]);
+
+  const handlePauseTimer = useCallback(() => {
+    setTimerRunning(false);
+  }, []);
+
+  const handleResetTimer = useCallback(() => {
+    setTimerRunning(false);
+    setTimeLeft(initialSeconds);
+  }, [initialSeconds]);
+
+  // Web Speech API Hook
+  const {
+    isListening,
+    isSupported: isVoiceSupported,
+    transcript: voiceTranscript,
+    lastCommand,
+    errorMessage: voiceErrorMessage,
+    toggleListening: toggleVoice,
+  } = useCookModeVoice({
+    onNextStep: handleNextStep,
+    onPrevStep: handlePrevStep,
+    onCheckItem: handleVoiceCheckItem,
+    onCheckAll: handleCheckAll,
+    onReadStep: handleReadStep,
+    onStartTimer: handleStartTimer,
+    onPauseTimer: handlePauseTimer,
+    onResetTimer: handleResetTimer,
+    onExit: onClose,
+    isSpeaking,
+  });
 
   // AI Chef live query
   const handleAskChef = async (e: React.FormEvent) => {
@@ -156,7 +241,7 @@ export const CookModeModal: React.FC<CookModeModalProps> = ({
       });
       const data = await res.json();
       setChefAnswer(data.answer || 'Keep steady heat and taste as you go.');
-    } catch (err: any) {
+    } catch {
       setChefAnswer('Keep moderate flame and ensure oil does not smoke too harshly.');
     } finally {
       setIsAskingChef(false);
@@ -189,11 +274,46 @@ export const CookModeModal: React.FC<CookModeModalProps> = ({
           </div>
         </div>
 
-        {/* Step Progress Pills & Narration */}
-        <div className="flex items-center gap-4">
+        {/* Step Progress Pills & Voice Narration Controls */}
+        <div className="flex items-center gap-3">
+          {/* Hands-Free Voice Control Toggle */}
+          <button
+            onClick={toggleVoice}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+              isListening
+                ? 'bg-emerald-950/70 border-emerald-500 text-emerald-300 shadow-md shadow-emerald-950/50 ring-2 ring-emerald-500/30'
+                : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10 hover:text-white'
+            }`}
+            title={
+              isVoiceSupported
+                ? isListening
+                  ? 'Hands-free voice recognition active (Click to pause)'
+                  : 'Enable hands-free voice commands ("Next", "Done", "Back")'
+                : 'Voice commands not supported in this browser'
+            }
+          >
+            {isListening ? (
+              <>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <Mic className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                <span>Listening...</span>
+              </>
+            ) : (
+              <>
+                <Mic className="w-3.5 h-3.5 text-neutral-400" />
+                <span className="hidden sm:inline">Hands-Free Voice</span>
+                <span className="sm:hidden">Voice</span>
+              </>
+            )}
+          </button>
+
+          {/* Text-to-Speech Read Step Button */}
           <button
             onClick={handleReadStep}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
               isSpeaking
                 ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
                 : 'bg-white/5 text-neutral-300 border-white/10 hover:bg-white/10'
@@ -201,7 +321,7 @@ export const CookModeModal: React.FC<CookModeModalProps> = ({
             title="Read step out loud"
           >
             {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-            <span>{isSpeaking ? 'Pause Voice' : 'Read Step'}</span>
+            <span className="hidden sm:inline">{isSpeaking ? 'Pause Voice' : 'Read Step'}</span>
           </button>
 
           <span className="text-sm font-medium text-amber-400 tabular-nums">
@@ -209,6 +329,70 @@ export const CookModeModal: React.FC<CookModeModalProps> = ({
           </span>
         </div>
       </div>
+
+      {/* Live Voice Status & Command Feedback Strip */}
+      {isListening && (
+        <div className="bg-[#101b13] border-b border-emerald-900/50 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs transition-all">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <span className="w-1 h-3 bg-emerald-400 rounded-full animate-pulse"></span>
+              <span className="w-1 h-4 bg-emerald-400 rounded-full animate-pulse delay-75"></span>
+              <span className="w-1 h-2 bg-emerald-400 rounded-full animate-pulse delay-150"></span>
+            </div>
+
+            {lastCommand ? (
+              <span className="font-semibold text-emerald-200 bg-emerald-900/60 px-2.5 py-0.5 rounded border border-emerald-700/60 animate-in fade-in">
+                {lastCommand}
+              </span>
+            ) : voiceTranscript ? (
+              <span className="text-neutral-300">
+                Heard: <em className="text-emerald-300 font-medium">"{voiceTranscript}"</em>
+              </span>
+            ) : (
+              <span className="text-emerald-300/90 font-medium flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Hands-free active. Say <strong>"Next"</strong>, <strong>"Done"</strong>, or <strong>"Back"</strong></span>
+              </span>
+            )}
+          </div>
+
+          {/* Voice Command Quick Help Chips */}
+          <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-neutral-400">
+            <span className="text-neutral-500">Quick commands:</span>
+            <span className="px-1.5 py-0.5 rounded bg-black/50 border border-emerald-900/50 text-emerald-300 font-mono">
+              "Next"
+            </span>
+            <span className="px-1.5 py-0.5 rounded bg-black/50 border border-emerald-900/50 text-emerald-300 font-mono">
+              "Done"
+            </span>
+            <span className="px-1.5 py-0.5 rounded bg-black/50 border border-emerald-900/50 text-emerald-300 font-mono">
+              "Back"
+            </span>
+            <span className="px-1.5 py-0.5 rounded bg-black/50 border border-emerald-900/50 text-emerald-300 font-mono">
+              "Read Step"
+            </span>
+            <span className="px-1.5 py-0.5 rounded bg-black/50 border border-emerald-900/50 text-emerald-300 font-mono">
+              "Start Timer"
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Voice Error notice if microphone denied */}
+      {voiceErrorMessage && (
+        <div className="bg-amber-950/80 border-b border-amber-600/40 px-6 py-2 text-xs text-amber-200 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>{voiceErrorMessage}</span>
+          </div>
+          <button
+            onClick={toggleVoice}
+            className="text-amber-300 hover:text-white font-semibold underline text-xs ml-3"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Main Step Content Area */}
       <div className="flex-1 overflow-y-auto px-6 py-8 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -233,6 +417,12 @@ export const CookModeModal: React.FC<CookModeModalProps> = ({
               <span className="text-xs uppercase tracking-wider text-neutral-400 font-medium">
                 Active Step
               </span>
+              {isListening && (
+                <span className="ml-auto text-[11px] text-emerald-400 font-mono flex items-center gap-1 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800/40">
+                  <Mic className="w-3 h-3 animate-pulse" />
+                  <span>Say "Next" to advance</span>
+                </span>
+              )}
             </div>
 
             <p className="text-2xl lg:text-3xl font-display text-white leading-relaxed tracking-wide">
@@ -347,17 +537,32 @@ export const CookModeModal: React.FC<CookModeModalProps> = ({
         {/* Right Column: Ingredient Checkbox Panel (4 cols) */}
         <div className="lg:col-span-4 p-6 rounded-xl bg-[#16140f] border border-neutral-800 space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
-            <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
-              Ingredients Used
-            </h3>
-            <span className="text-xs text-neutral-400">
-              {Object.values(usedIngredients).filter(Boolean).length} / {variation.ingredients.length} prepared
-            </span>
+            <div>
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
+                Ingredients Used
+              </h3>
+              <span className="text-xs text-neutral-400">
+                {Object.values(usedIngredients).filter(Boolean).length} / {variation.ingredients.length} prepared
+              </span>
+            </div>
+
+            <button
+              onClick={handleCheckAll}
+              className="text-[11px] text-amber-400 hover:text-amber-300 font-medium px-2 py-1 rounded bg-white/5 hover:bg-white/10 transition-colors"
+              title="Check all ingredients as prepared"
+            >
+              Check All
+            </button>
           </div>
 
-          <p className="text-xs text-neutral-400">
-            Check off items as you measure and incorporate them into the pan.
-          </p>
+          <div className="flex items-center justify-between text-xs text-neutral-400">
+            <span>Check off items as you add them to the pot:</span>
+            {isListening && (
+              <span className="text-emerald-400 text-[11px] font-mono shrink-0 font-medium">
+                🎤 Say "Done"
+              </span>
+            )}
+          </div>
 
           <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
             {variation.ingredients.map((ing) => {
@@ -397,7 +602,7 @@ export const CookModeModal: React.FC<CookModeModalProps> = ({
       {/* Bottom Navigation Control Bar */}
       <div className="px-6 py-4 border-t border-amber-900/30 bg-[#14120e] flex items-center justify-between">
         <button
-          onClick={() => setCurrentStepIndex((prev) => Math.max(0, prev - 1))}
+          onClick={handlePrevStep}
           disabled={currentStepIndex === 0}
           className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-neutral-700 text-sm font-medium text-neutral-300 hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
@@ -405,28 +610,43 @@ export const CookModeModal: React.FC<CookModeModalProps> = ({
           <span>Previous Step</span>
         </button>
 
-        {/* Step dots */}
-        <div className="hidden sm:flex items-center gap-1.5">
-          {variation.steps.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentStepIndex(idx)}
-              className={`w-2.5 h-2.5 rounded-full transition-all ${
-                idx === currentStepIndex
-                  ? 'bg-amber-500 scale-125'
-                  : idx < currentStepIndex
-                  ? 'bg-amber-800'
-                  : 'bg-neutral-700'
-              }`}
-              title={`Go to step ${idx + 1}`}
-            />
-          ))}
+        {/* Step dots & Voice indicator */}
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-1.5">
+            {variation.steps.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentStepIndex(idx)}
+                className={`w-2.5 h-2.5 rounded-full transition-all ${
+                  idx === currentStepIndex
+                    ? 'bg-amber-500 scale-125'
+                    : idx < currentStepIndex
+                    ? 'bg-amber-800'
+                    : 'bg-neutral-700'
+                }`}
+                title={`Go to step ${idx + 1}`}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={toggleVoice}
+            className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+              isListening
+                ? 'bg-emerald-950/60 border-emerald-600/70 text-emerald-300'
+                : 'bg-white/5 border-neutral-700 text-neutral-400 hover:text-white'
+            }`}
+            title="Toggle Hands-Free Voice Navigation"
+          >
+            <Mic className={`w-3.5 h-3.5 ${isListening ? 'text-emerald-400 animate-pulse' : 'text-neutral-500'}`} />
+            <span>{isListening ? 'Voice: Listening ("Next" / "Done")' : 'Enable Voice'}</span>
+          </button>
         </div>
 
         {currentStepIndex < variation.steps.length - 1 ? (
           <button
-            onClick={() => setCurrentStepIndex((prev) => prev + 1)}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold transition-all shadow-md"
+            onClick={handleNextStep}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold transition-all shadow-md active:scale-95"
           >
             <span>Next Step</span>
             <ChevronRight className="w-4 h-4" />
@@ -434,7 +654,7 @@ export const CookModeModal: React.FC<CookModeModalProps> = ({
         ) : (
           <button
             onClick={onClose}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-all shadow-md"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-all shadow-md active:scale-95"
           >
             <Check className="w-4 h-4" />
             <span>Finish Cooking</span>

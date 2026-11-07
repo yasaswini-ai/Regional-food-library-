@@ -1,7 +1,8 @@
 {
-  "name": "Rasoi Lineage - Regional Indian Cookbook & Cook Mode",
-  "description": "Authentic regional Indian culinary archive honoring family and district variations across Telugu, South Indian, and North Indian cuisines, with interactive Cook Mode, difficulty justifications, substitutions, and multilingual support.",
+  "name": "Flavora",
+  "description": "Authentic regional Indian culinary archive honoring family and district variations across Telugu, South Indian, North Indian, Pan-Indian states, and international diaspora traditions with interactive Cook Mode, weekly meal planner, difficulty ratings, and AI recipe engine.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
-
